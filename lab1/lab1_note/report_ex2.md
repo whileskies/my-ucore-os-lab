@@ -79,10 +79,10 @@ gnome-terminal -e "gdb -tui -q -x tools/gdbinit"
 
 - 将lab1_result目录在VS Code中打开
 - 点击运行-创建launch.json文件，选择gdb调试器
-  ![img](report_ex2.assets/1159891-20200615225729286-455005839.png)]
+  ![img](report_ex2.assets/1159891-20200615225729286-455005839.png)
 
 - VS Code会自动创建该文件模板，在配置项中只需修改和增加下面两个
-  ![img](report_ex2.assets/1159891-20200615230019385-643686845.png)]
+  ![img](report_ex2.assets/1159891-20200615230019385-643686845.png)
 
 ```json
 "miDebuggerServerAddress": "127.0.0.1:1234",
@@ -92,13 +92,13 @@ gnome-terminal -e "gdb -tui -q -x tools/gdbinit"
 完成配置后可通过VS Code进行调试
 
 - 使用`make gdb`使qemu进入调试模式
-  ![img](report_ex2.assets/1159891-20200615230351956-937747373.png)]
+  ![img](report_ex2.assets/1159891-20200615230351956-937747373.png)
   
 - 在内核代码中添加断点
-  ![img](report_ex2.assets/1159891-20200615230501858-1901835862.png)]
+  ![img](report_ex2.assets/1159891-20200615230501858-1901835862.png)
   
 - 启动调试
-  ![img](report_ex2.assets/1159891-20200615230548784-1783867404.png)]
+  ![img](report_ex2.assets/1159891-20200615230548784-1783867404.png)
   
 - 进行调试
-  ![img](report_ex2.assets/1159891-20200615230742124-1756552416.png)]
+  ![img](report_ex2.assets/1159891-20200615230742124-1756552416.png)
