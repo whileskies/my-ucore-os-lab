@@ -93,12 +93,9 @@ gnome-terminal -e "gdb -tui -q -x tools/gdbinit"
 
 - 使用`make gdb`使qemu进入调试模式
   ![img](report_ex2.assets/1159891-20200615230351956-937747373.png)
-  
 - 在内核代码中添加断点
   ![img](report_ex2.assets/1159891-20200615230501858-1901835862.png)
-  
 - 启动调试
   ![img](report_ex2.assets/1159891-20200615230548784-1783867404.png)
-  
 - 进行调试
   ![img](report_ex2.assets/1159891-20200615230742124-1756552416.png)
