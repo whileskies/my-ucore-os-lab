@@ -1,4 +1,4 @@
-#### 练习1：理解通过make生成执行文件的过程。（要求在报告中写出对下述问题的回答）
+## 练习1：理解通过make生成执行文件的过程。（要求在报告中写出对下述问题的回答）
 
 列出本实验各练习中对应的OS原理的知识点，并说明本实验中的实现部分如何对应和体现了原理中的基本概念和关键知识点。
 
@@ -9,11 +9,11 @@
 
 
 
-##### 1. 操作系统镜像文件ucore.img是如何一步一步生成的？
+### 1. 操作系统镜像文件ucore.img是如何一步一步生成的？
 
 使用`make V= >> lab1_note/make_result.txt`命令对内核进行编译，并将编译过程重定向到make_result.txt文件
 
-###### （1） 编译内核相关文件
+#### （1） 编译内核相关文件
 
 make首先对各目录的C文件进行预处理、编译、汇编生成目标文件，对.S汇编文件直接生成目标文件，处理的文件按照先后顺序如下：
 
@@ -47,7 +47,7 @@ gcc -Ikern/libs/ -march=i686 -fno-builtin -fno-PIC -Wall -ggdb -m32 -gstabs -nos
 - -gstabs：以 stabs 格式声称调试信息，但是不包括 gdb 调试信息
 - -fno-stack-protector：禁用堆栈保护器
 
-###### （2） 链接内核文件，生成内核可执行程序
+#### （2） 链接内核文件，生成内核可执行程序
 
 使用ld命令链接上面生成的各目标文件，并根据`tools/kernel.ld`脚本文件进行链接，链接后生成bin/kernelOS内核文件
 
@@ -56,7 +56,7 @@ gcc -Ikern/libs/ -march=i686 -fno-builtin -fno-PIC -Wall -ggdb -m32 -gstabs -nos
 ld -m    elf_i386 -nostdlib -T tools/kernel.ld -o bin/kernel  obj/kern/init/init.o obj/kern/libs/stdio.o obj/kern/libs/readline.o obj/kern/debug/panic.o obj/kern/debug/kdebug.o obj/kern/debug/kmonitor.o obj/kern/driver/clock.o obj/kern/driver/console.o obj/kern/driver/picirq.o obj/kern/driver/intr.o obj/kern/trap/trap.o obj/kern/trap/vectors.o obj/kern/trap/trapentry.o obj/kern/mm/pmm.o  obj/libs/string.o obj/libs/printfmt.o
 ```
 
-###### （3）编译、链接bootloader
+#### （3）编译、链接bootloader
 
 首先使用gcc将bootasm.S、bootmain.c生成目标文件，再使用ld命令将两个目标文件链接，设置Entry入口为start段，代码段起始位置为0x7c00，使用sign程序将bootblock.o文件添加主引导扇区的标志，使其作为bootloader
 
@@ -77,7 +77,28 @@ ld -m    elf_i386 -nostdlib -N -e start -Ttext 0x7C00 obj/boot/bootasm.o obj/boo
 build 512 bytes boot sector: 'bin/bootblock' success!
 ```
 
-###### （4）生成OS镜像文件
+bootloader生成过程如下所示：
+
+```makefile
+CC := gcc
+CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
+CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector) 
+
+LD := ld
+LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null | head -n 1)
+
+OBJCOPY = objcopy
+OBJDUMP = objdump
+bootblock: bootasm.S bootmain.c
+	$(CC) $(CFLAGS) -fno-pic -O -nostdinc -I. -c bootmain.c
+	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c bootasm.S
+	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7C00 -o bootblock.o bootasm.o bootmain.o
+	$(OBJDUMP) -S bootblock.o > bootblock.asm
+	$(OBJCOPY) -S -O binary -j .text bootblock.o bootblock
+	./sign bootblock bootblock
+```
+
+#### （4）生成OS镜像文件
 
 dd命令用于转换和复制文件，这里使用dd来生成最终的ucore镜像文件
 
@@ -93,7 +114,7 @@ dd if=bin/kernel of=bin/ucore.img seek=1 conv=notrunc
 
 
 
-##### 2. 一个被系统认为是符合规范的硬盘主引导扇区的特征是什么？
+### 2. 一个被系统认为是符合规范的硬盘主引导扇区的特征是什么？
 
 生成符合规范的硬盘主引导扇区的程序源文件为tools/sign.c，核心代码如下：
 

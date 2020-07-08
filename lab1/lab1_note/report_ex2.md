@@ -1,4 +1,4 @@
-#### 练习2：使用qemu执行并调试lab1中的软件。（要求在报告中简要写出练习过程）
+## 练习2：使用qemu执行并调试lab1中的软件。（要求在报告中简要写出练习过程）
 
 为了熟悉使用qemu和gdb进行的调试工作，我们进行如下的小练习：
 
@@ -12,7 +12,7 @@
 
    
 
-##### 1. 从CPU加电后执行的第一条指令开始，单步跟踪BIOS的执行
+### 1. 从CPU加电后执行的第一条指令开始，单步跟踪BIOS的执行
 
 在Makefile中增加以下伪目标：
 
@@ -53,7 +53,7 @@ gnome-terminal -e "gdb -tui -q -x tools/gdbinit"
 
 
 
-##### 2. 在初始化位置0x7c00设置实地址断点,测试断点正常
+### 2. 在初始化位置0x7c00设置实地址断点,测试断点正常
 
 输入`b *0x7c00`在0x7c00处打断点，输入`continue`运行到断点处
 
@@ -61,7 +61,7 @@ gnome-terminal -e "gdb -tui -q -x tools/gdbinit"
 
 
 
-##### 3. 从0x7c00开始跟踪代码运行,将单步跟踪反汇编得到的代码与bootasm.S和 bootblock.asm进行比较
+### 3. 从0x7c00开始跟踪代码运行,将单步跟踪反汇编得到的代码与bootasm.S和 bootblock.asm进行比较
 
 输入`x /5i 0x7c00`显示0x7c00地址开始的连续5条指令，可见于bootasm.S中的前五条指令是一致的
 
@@ -71,7 +71,7 @@ gnome-terminal -e "gdb -tui -q -x tools/gdbinit"
 
 
 
-##### 4. 自己找一个bootloader或内核中的代码位置，设置断点并进行测试
+### 4. 自己找一个bootloader或内核中的代码位置，设置断点并进行测试
 
 以调试内核为例，这里配合VS Code进行调试，更加直观，方便操作
 
