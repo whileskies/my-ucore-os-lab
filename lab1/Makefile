@@ -226,6 +226,11 @@ debug-nox: $(UCOREIMG)
 	$(V)sleep 2
 	$(V)$(TERMINAL) -e "gdb -q -x tools/gdbinit"
 
+lab1-mon: $(UCOREIMG)
+	$(V)$(TERMINAL) -e "$(QEMU) -S -s -d in_asm -D $(BINDIR)/q.log -monitor stdio -hda $< -serial null"
+	$(V)sleep 2
+	$(V)$(TERMINAL) -e "gdb -q -x tools/lab1init"
+
 .PHONY: grade touch
 
 GRADE_GDB_IN	:= .gdb.in
