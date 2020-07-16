@@ -238,4 +238,14 @@ bad:
 
 ### 参考
 
-操作系统真相还原
+- 操作系统真相还原
+
+- [ELF文件格式分析](https://wenku.baidu.com/view/90f39949e518964bcf847c13.html)
+
+- [核中汇编写的字符串函数代码分析](https://www.cnblogs.com/taek/archive/2012/02/05/2338939.html)
+
+- [Intel 80386 Programmer's Reference Manual](http://www.logix.cz/michal/doc/i386/)
+
+- [GCC-Inline-Assembly-HOWTO](http://www.ibiblio.org/gferg/ldp/GCC-Inline-Assembly-HOWTO.html)
+
+  
