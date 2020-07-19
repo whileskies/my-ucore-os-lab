@@ -148,39 +148,41 @@ lpt_putc(int c) {
 static void
 cga_putc(int c) {
     // set black on white
+    // 设置为黑底白字，单个字符用两个字节表示，第一个字节为颜色，第二个字节为字符
     if (!(c & ~0xFF)) {
         c |= 0x0700;
     }
 
     switch (c & 0xff) {
-    case '\b':
+    case '\b':                                          // 退格字符
         if (crt_pos > 0) {
             crt_pos --;
             crt_buf[crt_pos] = (c & ~0xff) | ' ';
         }
         break;
-    case '\n':
+    case '\n':                                         // 换行字符，自动回车
         crt_pos += CRT_COLS;
-    case '\r':
+    case '\r':                                         // 回车字符
         crt_pos -= (crt_pos % CRT_COLS);
         break;
     default:
-        crt_buf[crt_pos ++] = c;     // write the character
+        crt_buf[crt_pos ++] = c;                       // 其他可显示字符，直接显示
         break;
     }
 
     // What is the purpose of this?
+    // 如果字符满屏了，第二行开始依次向上滚动一行，原第一行丢弃
     if (crt_pos >= CRT_SIZE) {
         int i;
-        memmove(crt_buf, crt_buf + CRT_COLS, (CRT_SIZE - CRT_COLS) * sizeof(uint16_t));
+        memmove(crt_buf, crt_buf + CRT_COLS, (CRT_SIZE - CRT_COLS) * sizeof(uint16_t));         // 从第二行开始的字符移至第一行
         for (i = CRT_SIZE - CRT_COLS; i < CRT_SIZE; i ++) {
-            crt_buf[i] = 0x0700 | ' ';
+            crt_buf[i] = 0x0700 | ' ';                                                          // 最后一行均设为空白字符
         }
-        crt_pos -= CRT_COLS;
+        crt_pos -= CRT_COLS;                                                                    // 光标指针回到最后一行开始
     }
 
     // move that little blinky thing
-    outb(addr_6845, 14);
+    outb(addr_6845, 14);                                                                        // 通过out指令移动光标
     outb(addr_6845 + 1, crt_pos >> 8);
     outb(addr_6845, 15);
     outb(addr_6845 + 1, crt_pos);
