@@ -37,7 +37,7 @@ kern_init(void) {
 
     //LAB1: CAHLLENGE 1 If you try to do it, uncomment lab1_switch_test()
     // user/kernel mode switch test
-    //lab1_switch_test();
+    lab1_switch_test();
 
     /* do nothing */
     while (1);
@@ -84,11 +84,27 @@ lab1_print_cur_status(void) {
 static void
 lab1_switch_to_user(void) {
     //LAB1 CHALLENGE 1 : TODO
+    asm volatile (
+	    "sub $0x8, %%esp \n"
+	    "int %0 \n"
+	    "movl %%ebp, %%esp"
+	    : 
+	    : "i"(T_SWITCH_TOU)  
+	);
+
+    cprintf("in user\n");
 }
 
 static void
 lab1_switch_to_kernel(void) {
-    //LAB1 CHALLENGE 1 :  TODO
+	asm volatile (
+	    "int %0 \n"
+	    "movl %%ebp, %%esp \n"
+	    : 
+	    : "i"(T_SWITCH_TOK)
+	);
+
+    cprintf("in kernel\n");
 }
 
 static void
@@ -96,7 +112,20 @@ lab1_switch_test(void) {
     lab1_print_cur_status();
     cprintf("+++ switch to  user  mode +++\n");
     lab1_switch_to_user();
+
+    
     lab1_print_cur_status();
+
+    // int fib[50];
+    // fib[0] = 0;
+    // fib[1] = 1;
+    // for (int i = 2; i < 50; i++) {
+    //     fib[i] = fib[i - 1] + fib[i - 2];
+    //     cprintf("%d + %d = %d\n", fib[i - 1], fib[i - 2], fib[i]);
+
+    //     for (int j = 0; j < 100000; j++);
+    // }
+      
     cprintf("+++ switch to kernel mode +++\n");
     lab1_switch_to_kernel();
     lab1_print_cur_status();

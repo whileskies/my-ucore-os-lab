@@ -46,6 +46,16 @@ idt_init(void) {
       *     You don't know the meaning of this instruction? just google it! and check the libs/x86.h to know more.
       *     Notice: the argument of lidt is idt_pd. try to find it!
       */
+    
+    extern uintptr_t __vectors[];
+
+    for (int i = 0; i < 256; i++) {
+        SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
+    }
+
+    SETGATE(idt[T_SWITCH_TOK], 0, GD_KTEXT, __vectors[T_SWITCH_TOK], DPL_USER);
+
+    lidt(&idt_pd);
 }
 
 static const char *
@@ -98,15 +108,15 @@ void
 print_trapframe(struct trapframe *tf) {
     cprintf("trapframe at %p\n", tf);
     print_regs(&tf->tf_regs);
-    cprintf("  ds   0x----%04x\n", tf->tf_ds);
-    cprintf("  es   0x----%04x\n", tf->tf_es);
-    cprintf("  fs   0x----%04x\n", tf->tf_fs);
-    cprintf("  gs   0x----%04x\n", tf->tf_gs);
-    cprintf("  trap 0x%08x %s\n", tf->tf_trapno, trapname(tf->tf_trapno));
-    cprintf("  err  0x%08x\n", tf->tf_err);
-    cprintf("  eip  0x%08x\n", tf->tf_eip);
-    cprintf("  cs   0x----%04x\n", tf->tf_cs);
-    cprintf("  flag 0x%08x ", tf->tf_eflags);
+    cprintf("  ds   0x----%04x  addr:%08x\n", tf->tf_ds, &tf->tf_ds);
+    cprintf("  es   0x----%04x  addr:%08x\n", tf->tf_es, &tf->tf_es);
+    cprintf("  fs   0x----%04x  addr:%08x\n", tf->tf_fs, &tf->tf_fs);
+    cprintf("  gs   0x----%04x  addr:%08x\n", tf->tf_gs, &tf->tf_gs);
+    cprintf("  trap 0x%08x %s  addr:%08x\n", tf->tf_trapno, trapname(tf->tf_trapno), &tf->tf_trapno);
+    cprintf("  err  0x%08x  addr:%08x\n", tf->tf_err, &tf->tf_err);
+    cprintf("  eip  0x%08x  addr:%08x\n", tf->tf_eip, &tf->tf_eip);
+    cprintf("  cs   0x----%04x  addr:%08x\n", tf->tf_cs, &tf->tf_cs);
+    cprintf("  flag 0x%08x", tf->tf_eflags);
 
     int i, j;
     for (i = 0, j = 1; i < sizeof(IA32flags) / sizeof(IA32flags[0]); i ++, j <<= 1) {
@@ -114,25 +124,73 @@ print_trapframe(struct trapframe *tf) {
             cprintf("%s,", IA32flags[i]);
         }
     }
-    cprintf("IOPL=%d\n", (tf->tf_eflags & FL_IOPL_MASK) >> 12);
+    cprintf("IOPL=%d  addr:%08x\n", (tf->tf_eflags & FL_IOPL_MASK) >> 12, &tf->tf_eflags);
 
     if (!trap_in_kernel(tf)) {
-        cprintf("  esp  0x%08x\n", tf->tf_esp);
-        cprintf("  ss   0x----%04x\n", tf->tf_ss);
+        cprintf("  esp  0x%08x  addr:%08x\n", tf->tf_esp, &tf->tf_esp);
+        cprintf("  ss   0x----%08x  addr:%08x\n", tf->tf_ss, &tf->tf_ss);
     }
 }
 
 void
 print_regs(struct pushregs *regs) {
-    cprintf("  edi  0x%08x\n", regs->reg_edi);
-    cprintf("  esi  0x%08x\n", regs->reg_esi);
-    cprintf("  ebp  0x%08x\n", regs->reg_ebp);
-    cprintf("  oesp 0x%08x\n", regs->reg_oesp);
-    cprintf("  ebx  0x%08x\n", regs->reg_ebx);
-    cprintf("  edx  0x%08x\n", regs->reg_edx);
-    cprintf("  ecx  0x%08x\n", regs->reg_ecx);
-    cprintf("  eax  0x%08x\n", regs->reg_eax);
+    cprintf("  edi  0x%08x  addr:%08x\n", regs->reg_edi, &regs->reg_edi);
+    cprintf("  esi  0x%08x  addr:%08x\n", regs->reg_esi, &regs->reg_esi);
+    cprintf("  ebp  0x%08x  addr:%08x\n", regs->reg_ebp, &regs->reg_ebp);
+    cprintf("  oesp 0x%08x  addr:%08x\n", regs->reg_oesp, &regs->reg_oesp);
+    cprintf("  ebx  0x%08x  addr:%08x\n", regs->reg_ebx, &regs->reg_ebx);
+    cprintf("  edx  0x%08x  addr:%08x\n", regs->reg_edx, &regs->reg_edx);
+    cprintf("  ecx  0x%08x  addr:%08x\n", regs->reg_ecx, &regs->reg_ecx);
+    cprintf("  eax  0x%08x  addr:%08x\n", regs->reg_eax, &regs->reg_eax);
 }
+
+
+/* temporary trapframe or pointer to trapframe */
+struct trapframe switchk2u, *switchu2k;
+
+static inline __attribute__((always_inline))
+void
+switch_to_user(struct trapframe *tf) {
+    if (tf->tf_cs != USER_CS) {
+        // tf->tf_cs = USER_CS;
+        // tf->tf_ds = tf->tf_es = tf->tf_ss = USER_DS;
+        // tf->tf_eflags |= FL_IOPL_MASK;
+        //tf->tf_esp = (uint32_t)tf + sizeof(struct trapframe) - 8;
+
+        switchk2u = *tf;
+
+        switchk2u.tf_cs = USER_CS;
+        switchk2u.tf_ds = switchk2u.tf_es = switchk2u.tf_ss = USER_DS;
+        switchk2u.tf_esp = (uint32_t)tf + sizeof(struct trapframe) - 8;
+    
+        // set eflags, make sure ucore can use io under user mode.
+        // if CPL > IOPL, then cpu will generate a general protection.
+        switchk2u.tf_eflags |= FL_IOPL_MASK;
+    
+        //print_trapframe(&switchk2u);
+        
+        // set temporary stack
+        // then iret will jump to the right stack
+        *((uint32_t *)tf - 1) = (uint32_t)&switchk2u;
+        //tf = (uint32_t)&switchk2u;
+
+    }
+}
+
+static inline __attribute__((always_inline))
+void
+switch_to_kernel(struct trapframe *tf) {
+    if (tf->tf_cs != KERNEL_CS) {
+        tf->tf_cs = KERNEL_CS;
+        tf->tf_ds = tf->tf_es = KERNEL_DS;
+        tf->tf_eflags &= ~FL_IOPL_MASK;
+        switchu2k = (struct trapframe *)(tf->tf_esp - (sizeof(struct trapframe) - 8));
+
+        memmove(switchu2k, tf, sizeof(struct trapframe) - 8);
+        *((uint32_t *)tf - 1) = (uint32_t)switchu2k;
+    }
+}
+
 
 /* trap_dispatch - dispatch based on what type of trap occurred */
 static void
@@ -147,6 +205,16 @@ trap_dispatch(struct trapframe *tf) {
          * (2) Every TICK_NUM cycle, you can print some info using a funciton, such as print_ticks().
          * (3) Too Simple? Yes, I think so!
          */
+        //extern size_t ticks;
+        ticks++;
+        
+        if (ticks % TICK_NUM == 0) {
+            print_ticks();
+
+            //cprintf("time int trapframe:\n");
+            //print_trapframe(tf);
+        }
+
         break;
     case IRQ_OFFSET + IRQ_COM1:
         c = cons_getc();
@@ -155,11 +223,26 @@ trap_dispatch(struct trapframe *tf) {
     case IRQ_OFFSET + IRQ_KBD:
         c = cons_getc();
         cprintf("kbd [%03d] %c\n", c, c);
+
+        if (c == '0') {
+            //切换为内核态
+            switch_to_kernel(tf);
+        } else if (c == '3') {
+            //切换为用户态
+            switch_to_user(tf);
+        }
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
     case T_SWITCH_TOU:
+        //cprintf("switch to user trapframe:\n");
+        //print_trapframe(tf);
+        switch_to_user(tf);
+        
+        break;
     case T_SWITCH_TOK:
-        panic("T_SWITCH_** ??\n");
+        //cprintf("switch to kernel trapframe:\n");
+        //print_trapframe(tf);
+        switch_to_kernel(tf);
         break;
     case IRQ_OFFSET + IRQ_IDE1:
     case IRQ_OFFSET + IRQ_IDE2:
