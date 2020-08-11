@@ -93,6 +93,11 @@
  *      Try to merge blocks at lower or higher addresses. Notice: This should
  *  change some pages' `p->property` correctly.
  */
+
+static void print_frea_area_info();
+static void my_default_check();
+
+
 free_area_t free_area;
 
 #define free_list (free_area.free_list)
@@ -135,20 +140,26 @@ default_alloc_pages(size_t n) {
         }
     }
     if (page != NULL) {
-        list_del(&(page->page_link));
         if (page->property > n) {
             struct Page *p = page + n;
             p->property = page->property - n;
-            list_add(&free_list, &(p->page_link));
-    }
-        nr_free -= n;
+            SetPageProperty(p);
+
+            list_add(&(page->page_link), &(p->page_link));
+        }
+
         ClearPageProperty(page);
+        list_del(&(page->page_link));
+        nr_free -= n;
     }
+
     return page;
 }
 
+
+//FFMA方法一
 static void
-default_free_pages(struct Page *base, size_t n) {
+default_free_pages_method1(struct Page *base, size_t n) {
     assert(n > 0);
     struct Page *p = base;
     for (; p != base + n; p ++) {
@@ -175,7 +186,87 @@ default_free_pages(struct Page *base, size_t n) {
         }
     }
     nr_free += n;
-    list_add(&free_list, &(base->page_link));
+
+    le = &free_list;
+    while ((le = list_next(le)) != &free_list) {
+        struct Page *next = le2page(le, page_link);
+        if (base < next) {
+            list_add_before(&(next->page_link), &(base->page_link));
+            return;
+        }
+    }
+    list_add_before(&free_list, &(base->page_link));
+}
+
+
+//FFMA方法二
+static void
+default_free_pages(struct Page *base, size_t n) {
+    assert(n > 0);
+    struct Page *p = base;
+    for (; p != base + n; p++) {
+        assert(!PageReserved(p) && !PageProperty(p));
+        p->flags = 0;
+        set_page_ref(p, 0);
+    }
+    base->property = n;
+    SetPageProperty(base);
+
+    nr_free += n;
+
+    //当前空闲块链表为空
+    if (list_empty(&free_list)) {
+        list_add(&free_list, &(base->page_link));
+        return;
+    }
+
+    list_entry_t *le = list_next(&free_list);
+    while (1) {
+        list_entry_t *cur_le = le;
+        list_entry_t *pre_le = le->prev;
+
+        struct Page *cur_page = NULL, *pre_page = NULL;
+        if (cur_le != &free_list) {
+            cur_page = le2page(cur_le, page_link);
+        }
+        if (pre_le != &free_list) {
+            pre_page = le2page(pre_le, page_link);
+        }
+
+        //cur_page指向当前处理的空闲块，pre_page为上一空闲块
+        //pre_page == NULL时为处理的首块，cur_page == NULL时为处理的尾块(实际为free_list，并不是空闲块，只为统一处理)
+        //处理过程是从首块到尾块(包括)，找到base应合并的地址大小区间后，考虑当前处理的块与上一块之间的合并问题
+        if ( (!pre_page && cur_page && base < cur_page) || 
+            (pre_page && cur_page && base > pre_page && base < cur_page) ||
+            (pre_page && !cur_page && base > pre_page) ) {
+            //情况1：将上一个块(pre_page)与释放块(base)、当前块(cur_page)合并，首、尾块除外
+            if (pre_page && cur_page && 
+                pre_page + pre_page->property == base &&
+                base + base->property == cur_page) {
+                ClearPageProperty(base);
+                ClearPageProperty(cur_page);
+                pre_page->property += (base->property + cur_page->property);
+                list_del(cur_le);
+            } else if (pre_page && pre_page + pre_page->property == base) {
+                //情况2：与上一块的尾部合并，首块除外
+                ClearPageProperty(base);
+                pre_page->property += base->property;
+            } else if (cur_page && base + base->property == cur_page) {
+                //情况3：与当前块的首部合并，尾块除外
+                ClearPageProperty(cur_page);
+                base->property += cur_page->property;
+                list_add_before(cur_le, &(base->page_link));
+                list_del(cur_le);
+            } else {
+                //情况4：独立插入到上一块与当前块之间
+                list_add_before(cur_le, &(base->page_link));
+            }
+
+            return;
+        }
+
+        le = list_next(le);
+    }
 }
 
 static size_t
@@ -297,6 +388,58 @@ default_check(void) {
     }
     assert(count == 0);
     assert(total == 0);
+
+    //my_default_check();
+}
+
+
+static void
+my_default_check() {
+    struct Page *p0 = alloc_pages(100);
+    cprintf("alloc 100 pages\n");
+    print_frea_area_info();
+
+    free_pages(p0, 10);
+    print_frea_area_info();
+    free_pages(p0 + 20, 10);
+    print_frea_area_info();
+    free_pages(p0 + 40, 10);
+    print_frea_area_info();
+    free_pages(p0 + 60, 10);
+    print_frea_area_info();
+    free_pages(p0 + 80, 10);
+    print_frea_area_info();
+
+
+    free_pages(p0 + 90, 10);
+    print_frea_area_info();
+    free_pages(p0 + 70, 10);
+    print_frea_area_info();
+    free_pages(p0 + 50, 10);
+    print_frea_area_info();
+    free_pages(p0 + 30, 10);
+    print_frea_area_info();
+    free_pages(p0 + 10, 10);
+    print_frea_area_info();
+
+    cprintf("after free\n");
+    print_frea_area_info();
+}
+
+
+static void
+print_frea_area_info() {
+    cprintf("-----free area info begin-----\n");
+    cprintf("nr_free: %d\n", nr_free);
+    cprintf("%10s%10s%10s%5s%15s%15s\n", "begin_ppn","end_ppn", "page_cnt", "ref", "PG_reserved", "PG_property");
+    list_entry_t *le = &free_list;
+    while ((le = list_next(le)) != &free_list) {
+        struct Page *p = le2page(le, page_link);
+        cprintf("%10d%10d%10d%5d%15d%15d\n",
+            page2ppn(p), page2ppn(p) + p->property - 1, p->property, 
+            p->ref, PageReserved(p), PageProperty(p));
+    }
+    cprintf("-----free area info end-------\n");
 }
 
 const struct pmm_manager default_pmm_manager = {

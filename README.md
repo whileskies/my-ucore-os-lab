@@ -12,3 +12,6 @@
 - [练习六：完善中断初始化和处理](lab1/lab1_note/report_ex6.md)
 - [扩展练习：用户态与内核态转换](lab1/lab1_note/report_ex7_challenge.md)
 
+### lab2
+
+- [练习一：实现 first-fit 连续物理内存分配算法](lab2/lab2_note/report_ex1.md)
