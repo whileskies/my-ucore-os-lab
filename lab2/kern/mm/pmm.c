@@ -359,13 +359,10 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     }
     return NULL;          // (8) return page table entry
 #endif
-    //cprintf("pgdir: %08x\n", pgdir);
-    //cprintf("pdx(la) = %d\n", PDX(la));
+
     pde_t *pdep = &pgdir[PDX(la)];
-    //cprintf("pde: %u\n", *pdep);
+    
     if (!(*pdep & PTE_P)) {
-        //page table doesn't exists
-        //cprintf("exists\n");
 
         if (create) {
             struct Page *page = alloc_page();
@@ -433,8 +430,7 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
     if (la_ptep == ptep) {
         struct Page *page = pte2page(*ptep);
 
-        page_ref_dec(page);
-        if (page->ref == 0) {
+        if (page_ref_dec(page) == 0) {
             free_page(page);
         }
             
