@@ -244,7 +244,7 @@ static void default_free_pages(struct Page *base, size_t n) {
 
 ```c
 static void
-print_frea_area_info() {
+print_free_area_info() {
     cprintf("-----free area info begin-----\n");
     cprintf("nr_free: %d\n", nr_free);
     cprintf("%10s%10s%10s%5s%15s%15s\n", "begin_ppn","end_ppn", "page_cnt", "ref", "PG_reserved", "PG_property");

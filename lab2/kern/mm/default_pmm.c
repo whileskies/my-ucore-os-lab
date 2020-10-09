@@ -94,7 +94,7 @@
  *  change some pages' `p->property` correctly.
  */
 
-static void print_frea_area_info();
+static void print_free_area_info();
 static void my_default_check();
 
 
@@ -397,38 +397,38 @@ static void
 my_default_check() {
     struct Page *p0 = alloc_pages(100);
     cprintf("alloc 100 pages\n");
-    print_frea_area_info();
+    print_free_area_info();
 
     free_pages(p0, 10);
-    print_frea_area_info();
+    print_free_area_info();
     free_pages(p0 + 20, 10);
-    print_frea_area_info();
+    print_free_area_info();
     free_pages(p0 + 40, 10);
-    print_frea_area_info();
+    print_free_area_info();
     free_pages(p0 + 60, 10);
-    print_frea_area_info();
+    print_free_area_info();
     free_pages(p0 + 80, 10);
-    print_frea_area_info();
+    print_free_area_info();
 
 
     free_pages(p0 + 90, 10);
-    print_frea_area_info();
+    print_free_area_info();
     free_pages(p0 + 70, 10);
-    print_frea_area_info();
+    print_free_area_info();
     free_pages(p0 + 50, 10);
-    print_frea_area_info();
+    print_free_area_info();
     free_pages(p0 + 30, 10);
-    print_frea_area_info();
+    print_free_area_info();
     free_pages(p0 + 10, 10);
-    print_frea_area_info();
+    print_free_area_info();
 
     cprintf("after free\n");
-    print_frea_area_info();
+    print_free_area_info();
 }
 
 
 static void
-print_frea_area_info() {
+print_free_area_info() {
     cprintf("-----free area info begin-----\n");
     cprintf("nr_free: %d\n", nr_free);
     cprintf("%10s%10s%10s%5s%15s%15s\n", "begin_ppn","end_ppn", "page_cnt", "ref", "PG_reserved", "PG_property");
