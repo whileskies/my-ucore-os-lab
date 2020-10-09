@@ -20,4 +20,4 @@
 
 - [练习三：释放某虚地址所在的页并取消对应二级页表项的映射](lab2/lab2_note/report_ex3.md)
 
-- [扩展练习1：buddy system（伙伴系统）分配算法](lab2/lab2_note/report_ex4_challenge_buddy_system.md)
+- [扩展练习1：buddy system（伙伴系统）分配算法](lab2\lab2_note\report_ex4_challenge_buddy_system.md)
