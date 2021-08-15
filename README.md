@@ -1,6 +1,8 @@
 # my-ucore-os-lab
 清华大学 ucore操作系统实验
 
+此实验后续将不再完成，改为完成MIT6.S081的OS实验：[xv6-labs-2020](https://github.com/whileskies/xv6-labs-2020)
+
 ## 实验报告
 ### lab1
 
